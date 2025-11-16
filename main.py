@@ -1,4 +1,3 @@
-
 import streamlit as st
 import fitz  # PyMuPDF
 from PIL import Image
@@ -41,20 +40,49 @@ if uploaded_file:
     st.markdown("---")
     st.markdown("### 🔍 좌표 입력 도우미")
     
+    # 단위 선택
+    unit = st.radio("입력 단위 선택", ["포인트(pt)", "밀리미터(mm)"], horizontal=True)
+    MM_TO_PT = 2.83465  # 1mm = 2.83465pt
+    
+    if unit == "밀리미터(mm)":
+        max_x = rect.width / MM_TO_PT
+        max_y = rect.height / MM_TO_PT
+        step = 0.1
+        st.info(f"📏 페이지 크기(mm): 가로 {max_x:.1f}mm x 세로 {max_y:.1f}mm")
+    else:
+        max_x = rect.width
+        max_y = rect.height
+        step = 1.0
+    
     col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("#### 왼쪽 위 모서리")
-        x0 = st.number_input("X 좌표 (왼쪽)", min_value=0.0, max_value=rect.width, value=0.0, step=1.0)
-        y0 = st.number_input("Y 좌표 (위쪽)", min_value=0.0, max_value=rect.height, value=0.0, step=1.0)
+        x0_input = st.number_input(f"X 좌표 (왼쪽) [{unit}]", min_value=0.0, max_value=max_x, value=0.0, step=step)
+        y0_input = st.number_input(f"Y 좌표 (위쪽) [{unit}]", min_value=0.0, max_value=max_y, value=0.0, step=step)
     
     with col2:
         st.markdown("#### 오른쪽 아래 모서리")
-        x1 = st.number_input("X 좌표 (오른쪽)", min_value=0.0, max_value=rect.width, value=100.0, step=1.0)
-        y1 = st.number_input("Y 좌표 (아래)", min_value=0.0, max_value=rect.height, value=100.0, step=1.0)
+        x1_input = st.number_input(f"X 좌표 (오른쪽) [{unit}]", min_value=0.0, max_value=max_x, value=100.0 if unit == "포인트(pt)" else 35.0, step=step)
+        y1_input = st.number_input(f"Y 좌표 (아래) [{unit}]", min_value=0.0, max_value=max_y, value=100.0 if unit == "포인트(pt)" else 35.0, step=step)
+    
+    # mm인 경우 pt로 변환
+    if unit == "밀리미터(mm)":
+        x0 = round(x0_input * MM_TO_PT, 1)
+        y0 = round(y0_input * MM_TO_PT, 1)
+        x1 = round(x1_input * MM_TO_PT, 1)
+        y1 = round(y1_input * MM_TO_PT, 1)
+        
+        st.markdown("### 🔄 변환된 좌표 (포인트)")
+        st.info(f"입력: [{x0_input}, {y0_input}, {x1_input}, {y1_input}] mm")
+    else:
+        x0 = x0_input
+        y0 = y0_input
+        x1 = x1_input
+        y1 = y1_input
     
     # 좌표 출력
-    st.markdown("### 📋 복사할 좌표")
+    st.markdown("### 📋 복사할 좌표 (포인트)")
     coord_text = f"[{x0}, {y0}, {x1}, {y1}]"
     st.code(coord_text, language="python")
     
